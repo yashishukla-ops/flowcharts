@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Understanding Marketo Segmentations</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:   #1a1f3a;
+      --navy2:  #252b50;
+      --coral:  #ff6b6b;
+      --mint:   #4ecdc4;
+      --gold:   #ffd93d;
+      --purple: #a29bfe;
+      --green:  #6bcb77;
+      --bg:     #f0f2f8;
+      --card:   #ffffff;
+      --text:   #2d3561;
+      --muted:  #7b8ab8;
+      --border: #dde2f0;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* ── Layout ── */
+    .layout { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 240px;
+      background: var(--navy);
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      overflow-y: auto;
+      z-index: 100;
+      padding: 24px 0;
+    }
+    .sidebar-logo {
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0 20px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      margin-bottom: 12px;
+    }
+    .sidebar-logo span { color: var(--mint); }
+    .sidebar a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      color: rgba(255,255,255,0.65);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+      border-left: 3px solid transparent;
+    }
+    .sidebar a:hover, .sidebar a.active {
+      color: #fff;
+      background: rgba(255,255,255,0.07);
+      border-left-color: var(--mint);
+    }
+    .sidebar a .icon { font-size: 16px; width: 20px; text-align: center; }
+
+    /* ── Main Content ── */
+    .main { margin-left: 240px; width: calc(100% - 240px); }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(135deg, var(--navy) 0%, #2d3561 60%, #3a4a8a 100%);
+      padding: 80px 60px;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(78,205,196,0.15) 0%, transparent 70%);
+      top: -100px; right: -100px;
+      border-radius: 50%;
+    }
+    .hero-tag {
+      display: inline-block;
+      background: rgba(78,205,196,0.2);
+      color: var(--mint);
+      border: 1px solid rgba(78,205,196,0.4);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-size: clamp(28px, 4vw, 52px);
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+    .hero h1 span { color: var(--mint); }
+    .hero p { font-size: 18px; color: rgba(255,255,255,0.7); max-width: 560px; }
+    .hero-stats {
+      display: flex;
+      gap: 40px;
+      margin-top: 48px;
+      flex-wrap: wrap;
+    }
+    .hero-stat { text-align: center; }
+    .hero-stat .num {
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--mint);
+      display: block;
+    }
+    .hero-stat .lbl { font-size: 12px; color: rgba(255,255,255,0.6); font-weight: 500; }
+
+    /* ── Sections ── */
+    .section { padding: 60px; border-bottom: 1px solid var(--border); }
+    .section:nth-child(even) { background: #e8ebf5; }
+    .section-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--mint);
+      background: rgba(78,205,196,0.12);
+      border-radius: 20px;
+      padding: 3px 12px;
+      margin-bottom: 10px;
+    }
+    h2 {
+      font-size: clamp(22px, 3vw, 34px);
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 8px;
+    }
+    .section-sub {
+      font-size: 16px;
+      color: var(--muted);
+      margin-bottom: 36px;
+      max-width: 640px;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 2px 12px rgba(26,31,58,0.08);
+    }
+    .cards-grid {
+      display: grid;
+      gap: 20px;
+    }
+    .cards-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+    .cards-3 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .cards-4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+    /* ── Rule Pills ── */
+    .rule-pills { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+    .pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--card);
+      border-radius: 12px;
+      padding: 14px 18px;
+      box-shadow: 0 2px 8px rgba(26,31,58,0.08);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--navy);
+      flex: 1;
+      min-width: 200px;
+    }
+    .pill .pill-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    /* ── Analogy Box ── */
+    .analogy {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+      border-radius: 20px;
+      padding: 36px;
+      color: #fff;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      align-items: center;
+    }
+    .analogy h3 { font-size: 22px; font-weight: 700; margin-bottom: 12px; }
+    .analogy p { color: rgba(255,255,255,0.75); line-height: 1.7; }
+    .cabinet {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .drawer {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background 0.2s;
+    }
+    .drawer.active { background: rgba(78,205,196,0.25); border-color: var(--mint); }
+    .drawer-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── Goal Cards ── */
+    .goal-card {
+      border-radius: 20px;
+      padding: 32px;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+    .goal-card::before {
+      content: '';
+      position: absolute;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      top: -60px; right: -60px;
+    }
+    .goal-card .goal-num {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      opacity: 0.7;
+      margin-bottom: 12px;
+    }
+    .goal-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 12px; }
+    .goal-card p { font-size: 14px; opacity: 0.85; line-height: 1.7; }
+    .goal-card ul { margin-top: 14px; padding-left: 18px; font-size: 14px; opacity: 0.85; }
+    .goal-card ul li { margin-bottom: 5px; }
+    .goal-1 { background: linear-gradient(135deg, #667eea, #764ba2); }
+    .goal-2 { background: linear-gradient(135deg, #f7971e, #ffd200); }
+    .goal-2 { color: var(--navy); }
+    .goal-2 .goal-num { color: var(--navy); opacity: 0.5; }
+
+    /* ── Traffic Light Table ── */
+    .tl-table { width: 100%; border-collapse: collapse; }
+    .tl-table th {
+      background: var(--navy);
+      color: #fff;
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .tl-table th:first-child { border-radius: 12px 0 0 0; }
+    .tl-table th:last-child { border-radius: 0 12px 0 0; }
+    .tl-table td {
+      padding: 12px 16px;
+      font-size: 13.5px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .tl-table tr:last-child td { border-bottom: none; }
+    .tl-table tr.keep { background: rgba(107,203,119,0.08); }
+    .tl-table tr.fix  { background: rgba(255,217,61,0.08); }
+    .tl-table tr.retire { background: rgba(255,107,107,0.08); }
+    .badge {
+      display: inline-block;
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .badge-green  { background: rgba(107,203,119,0.2); color: #2d8c3e; }
+    .badge-yellow { background: rgba(255,217,61,0.25); color: #8a6d00; }
+    .badge-red    { background: rgba(255,107,107,0.2); color: #c0392b; }
+    .count-chip {
+      display: inline-block;
+      background: var(--navy);
+      color: rgba(255,255,255,0.7);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    /* ── Architecture Cards ── */
+    .arch-card {
+      border-radius: 20px;
+      overflow: hidden;
+    }
+    .arch-header {
+      padding: 20px 24px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .arch-body { background: var(--card); padding: 20px 24px; }
+    .arch-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .arch-item:last-child { border-bottom: none; }
+    .arch-item .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .arch-item small { font-weight: 400; color: var(--muted); font-size: 12px; display: block; }
+
+    /* ── Flowchart ── */
+    .flow { display: flex; flex-direction: column; gap: 0; }
+    .flow-step {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+    }
+    .flow-left {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 48px;
+      flex-shrink: 0;
+    }
+    .flow-circle {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+      z-index: 1;
+    }
+    .flow-line {
+      width: 2px;
+      flex: 1;
+      background: var(--border);
+      margin: 0 auto;
+    }
+    .flow-content {
+      flex: 1;
+      padding: 0 0 24px 16px;
+    }
+    .flow-question {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .flow-answer {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 14px 18px;
+      border-left: 4px solid;
+      box-shadow: 0 2px 8px rgba(26,31,58,0.06);
+    }
+    .flow-answer h4 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .flow-answer p { font-size: 13px; color: var(--muted); }
+    .flow-answer .keywords {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;
+    }
+    .kw {
+      background: var(--bg);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    /* ── Geo Boxes ── */
+    .geo-level { margin-bottom: 28px; }
+    .geo-level-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .geo-boxes { display: flex; flex-wrap: wrap; gap: 12px; }
+    .geo-box {
+      border-radius: 14px;
+      padding: 16px 20px;
+      font-weight: 700;
+      font-size: 15px;
+      min-width: 120px;
+      text-align: center;
+    }
+    .geo-box small {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      margin-top: 4px;
+      opacity: 0.75;
+    }
+    .geo-arrow {
+      text-align: center;
+      color: var(--muted);
+      font-size: 22px;
+      margin: 8px 0;
+    }
+
+    /* ── Compliance ── */
+    .compliance-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+    .comp-card {
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+    }
+    .comp-icon { font-size: 32px; margin-bottom: 10px; }
+    .comp-card h4 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+    .comp-card p { font-size: 12px; opacity: 0.8; }
+    .comp-countries { font-size: 11px; margin-top: 8px; font-weight: 600; opacity: 0.7; }
+
+    /* ── CXO Alert ── */
+    .cxo-alert {
+      background: linear-gradient(135deg, #2d1b69, #6c3483);
+      border-radius: 20px;
+      padding: 40px;
+      color: #fff;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 32px;
+      align-items: center;
+    }
+    .cxo-icon-wrap {
+      width: 80px; height: 80px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 40px;
+    }
+    .cxo-alert h3 { font-size: 24px; font-weight: 800; margin-bottom: 10px; }
+    .cxo-alert p { opacity: 0.8; margin-bottom: 16px; font-size: 15px; }
+    .cxo-rules { display: flex; flex-direction: column; gap: 8px; }
+    .cxo-rule {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 14px;
+    }
+
+    /* ── Cheat Sheet ── */
+    .cheat-table { width: 100%; border-collapse: collapse; }
+    .cheat-table th {
+      background: var(--navy2);
+      color: var(--mint);
+      padding: 14px 20px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .cheat-table th:first-child { border-radius: 12px 0 0 0; }
+    .cheat-table th:last-child { border-radius: 0 12px 0 0; }
+    .cheat-table td {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .cheat-table tr:last-child td { border-bottom: none; }
+    .cheat-table tr:nth-child(even) td { background: rgba(26,31,58,0.03); }
+    .cheat-table td:first-child { font-weight: 600; }
+    .seg-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--navy);
+      color: var(--mint);
+      border-radius: 8px;
+      padding: 3px 10px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      background: var(--navy);
+      color: rgba(255,255,255,0.5);
+      text-align: center;
+      padding: 30px;
+      font-size: 13px;
+    }
+    .footer strong { color: var(--mint); }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; width: 100%; }
+      .section { padding: 40px 24px; }
+      .hero { padding: 48px 24px; }
+      .analogy { grid-template-columns: 1fr; }
+      .cxo-alert { grid-template-columns: 1fr; text-align: center; }
+      .cxo-icon-wrap { margin: 0 auto; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════ SIDEBAR ═══════════════ -->
+<div class="layout">
+<nav class="sidebar">
+  <div class="sidebar-logo">Marketo<br/><span>Segmentations</span></div>
+  <a href="#what-is"><span class="icon">📦</span> What Is Segmentation</a>
+  <a href="#goals"><span class="icon">🎯</span> Goals</a>
+  <a href="#audit"><span class="icon">🔍</span> Audit: Current State</a>
+  <a href="#architecture"><span class="icon">🏗️</span> New Architecture</a>
+  <a href="#job-level"><span class="icon">👤</span> Job Level</a>
+  <a href="#product-pillar"><span class="icon">🎯</span> Product Pillar</a>
+  <a href="#geo"><span class="icon">🌍</span> Geo Hierarchy</a>
+  <a href="#compliance"><span class="icon">✅</span> Compliance Flow</a>
+  <a href="#cxo"><span class="icon">⭐</span> CXO Protection</a>
+  <a href="#cheatsheet"><span class="icon">📋</span> Cheat Sheet</a>
+</nav>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<main class="main">
+
+  <!-- ── HERO ── -->
+  <div class="hero">
+    <div class="hero-tag">Visual Guide</div>
+    <h1>Understanding<br/><span>Marketo Segmentations</span></h1>
+    <p>From first principles to full architecture — everything you need to know about how we categorise our database for smarter email marketing.</p>
+    <div class="hero-stats">
+      <div class="hero-stat"><span class="num">3.4M+</span><span class="lbl">People in Database</span></div>
+      <div class="hero-stat"><span class="num">18</span><span class="lbl">Current Segmentations</span></div>
+      <div class="hero-stat"><span class="num">10</span><span class="lbl">New Segmentations</span></div>
+      <div class="hero-stat"><span class="num">4</span><span class="lbl">Categories</span></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SECTION 1 — WHAT IS SEGMENTATION
+  ════════════════════════════════════════ -->
+  <section class="section" id="what-is">
+    <div class="section-tag">Step 1 — Foundations</div>
+    <h2>What Is a Segmentation?</h2>
+    <p class="section-sub">Think of Marketo Segmentations like a filing cabinet. Every person in your database gets sorted into exactly one drawer — based on rules you define.</p>
+
+    <div class="analogy">
+      <div>
+        <h3>The Filing Cabinet Analogy</h3>
+        <p>Your database has millions of contacts. A segmentation is a set of labelled drawers. Marketo automatically assigns every person to one drawer, and re-sorts them dynamically as their data changes.</p>
+        <p style="margin-top:14px;">You can have many filing cabinets (segmentations), each organised by a different dimension — job level, geography, product interest, and so on.</p>
+      </div>
+      <div class="cabinet">
+        <div style="color: rgba(255,255,255,0.5); font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:8px;">Segmentation: Job Level</div>
+        <div class="drawer active"><div class="drawer-dot" style="background:#ff6b6b"></div>C-Level / CxO <span style="margin-left:auto;font-size:11px;opacity:0.6">307k people</span></div>
+        <div class="drawer"><div class="drawer-dot" style="background:#ffd93d"></div>VP / Exec <span style="margin-left:auto;font-size:11px;opacity:0.6">216k people</span></div>
+        <div class="drawer"><div class="drawer-dot" style="background:#6bcb77"></div>Director <span style="margin-left:auto;font-size:11px;opacity:0.6">522k people</span></div>
+        <div class="drawer"><div class="drawer-dot" style="background:#4ecdc4"></div>Manager <span style="margin-left:auto;font-size:11px;opacity:0.6">1.1M people</span></div>
+        <div class="drawer"><div class="drawer-dot" style="background:#a29bfe"></div>Contributor <span style="margin-left:auto;font-size:11px;opacity:0.6">961k people</span></div>
+        <div class="drawer"><div class="drawer-dot" style="background:#7b8ab8"></div>Default <span style="margin-left:auto;font-size:11px;opacity:0.6">11 people</span></div>
+      </div>
+    </div>
+
+    <div class="rule-pills" style="margin-top: 36px;">
+      <div class="pill">
+        <div class="pill-icon" style="background:rgba(255,107,107,0.15)">☝️</div>
+        <div><strong>One segment per person</strong><br/><span style="font-weight:400;color:var(--muted);font-size:13px">Each contact lives in exactly ONE segment per segmentation</span></div>
+      </div>
+      <div class="pill">
+        <div class="pill-icon" style="background:rgba(78,205,196,0.15)">🔄</div>
+        <div><strong>Fully dynamic</strong><br/><span style="font-weight:400;color:var(--muted);font-size:13px">Re-sorts automatically as field values change</span></div>
+      </div>
+      <div class="pill">
+        <div class="pill-icon" style="background:rgba(162,155,254,0.15)">📊</div>
+        <div><strong>Max 20 active</strong><br/><span style="font-weight:400;color:var(--muted);font-size:13px">Only 20 segmentations can be active at once</span></div>
+      </div>
+      <div class="pill">
+        <div class="pill-icon" style="background:rgba(255,217,61,0.15)">🗂️</div>
+        <div><strong>Max 100 segments</strong><br/><span style="font-weight:400;color:var(--muted);font-size:13px">Each segmentation can have up to 100 segments (drawers)</span></div>
+      </div>
+      <div class="pill">
+        <div class="pill-icon" style="background:rgba(107,203,119,0.15)">✉️</div>
+        <div><strong>Powers Dynamic Content</strong><br/><span style="font-weight:400;color:var(--muted);font-size:13px">Used to personalise email content per segment</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       SECTION 2 — GOALS
+  ════════════════════════════════════════ -->
+  <section class="section" id="goals">
+    <div class="section-tag">Step 2 — Why We're Doing This</div>
+    <h2>Two Clear Goals</h2>
+    <p class="section-sub">This project is driven by two core objectives for the marketing team.</p>
+
+    <div class="cards-grid cards-2">
+      <div class="goal-card goal-1">
+        <div class="goal-num">Goal #1</div>
+        <h3>Standardise Target Audiences</h3>
+        <p>Make it easier and faster for marketers to choose and build email audiences — removing guesswork and inconsistency.</p>
+        <ul>
+          <li>Easier audience selection for campaign requesters</li>
+          <li>Faster build time for email senders</li>
+          <li>Visibility into audience sizing before sending</li>
+          <li>Target only the most engaged audiences</li>
+        </ul>
+      </div>
+      <div class="goal-card goal-2">
+        <div class="goal-num">Goal #2</div>
+        <h3>Protect the CXO "White Glove" List</h3>
+        <p>Identify and ring-fence a premium group of C-Level / F500 / G2K contacts so they are <em>only</em> emailed by the CXO team — never by regular marketing campaigns.</p>
+        <ul>
+          <li>Separate segment: CXO — Do Not Use</li>
+          <li>Automatically excluded from all mass sends</li>
+          <li>Only the CXO transformation team may contact them</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Example email task -->
+    <div class="card" style="margin-top:28px; border-left: 4px solid var(--mint);">
+      <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Example Email Task Submission (Goal #1 in action)</div>
+      <div style="display:grid;gap:6px;">
+        <div style="font-size:14px;"><strong>Target Audience:</strong></div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
+          <span class="seg-chip">Prospects</span>
+          <span class="seg-chip">Customers</span>
+          <span class="seg-chip">FED/Sled</span>
+          <span class="seg-chip">Marketable</span>
+          <span class="seg-chip">Job Level: C-Level, Director, Executive</span>
+          <span class="seg-chip">Job Title: CIO, CISO, Director</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       SECTION 3 — AUDIT
+  ════════════════════════════════════════ -->
+  <section class="section" id="audit">
+    <div class="section-tag">Step 3 — Audit</div>
+    <h2>Current State: 18 Segmentations</h2>
+    <p class="section-sub">A full review of what exists today — what to keep, what to fix, and what to retire.</p>
+
+    <div class="card" style="overflow-x:auto;">
+      <table class="tl-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Segmentation</th>
+            <th>Status</th>
+            <th>Usage</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="keep">
+            <td>1</td>
+            <td><strong>Account Tier</strong><br/><small>Tiers 1–5 by SFDC account tier field</small></td>
+            <td><span class="badge badge-green">🟢 Active</span></td>
+            <td><span class="count-chip">~70 email programs</span> <span class="count-chip">~20 campaigns</span></td>
+            <td>Keep</td>
+          </tr>
+          <tr class="fix">
+            <td>2</td>
+            <td><strong>Account Type</strong><br/><small>Partners / Customers / Prospects</small></td>
+            <td><span class="badge badge-red">🔴 Inactive</span></td>
+            <td>—</td>
+            <td>Review &amp; Activate (Daniel O)</td>
+          </tr>
+          <tr class="fix">
+            <td>3</td>
+            <td><strong>Compliance Group</strong><br/><small>Explicit Double / Single / Implied / Restricted</small></td>
+            <td><span class="badge badge-yellow">🟡 Draft</span></td>
+            <td>Compliance program</td>
+            <td>Complete &amp; activate</td>
+          </tr>
+          <tr class="fix">
+            <td>4</td>
+            <td><strong>Conversations</strong><br/><small>Product interest / conversation topics</small></td>
+            <td><span class="badge badge-green">🟢 Active</span></td>
+            <td>—</td>
+            <td>Rename → "Product Persona"</td>
+          </tr>
+          <tr class="keep">
+            <td>5</td>
+            <td><strong>Job Level</strong><br/><small>C-Level, VP, Director, Manager, Contributor</small></td>
+            <td><span class="badge badge-green">🟢 Active</span></td>
+            <td><span class="count-chip">500+ email programs</span> <span class="count-chip">~100 smartlists</span></td>
+            <td>Review &amp; Update</td>
+          </tr>
+          <tr class="retire">
+            <td>6</td>
+            <td><strong>Lead Age</strong><br/><small>FY17 through FY26 fiscal year buckets</small></td>
+            <td><span class="badge badge-green">🟢 Active</span></td>
+            <td><span class="count-chip">42 smartlists</span></td>
+            <td>🔴 REMOVE</td>
+          </tr>
+          <tr class="fix">
+            <td>7</td>
+            <td><strong>Lead Source</strong><br/><small>Trade Show, Digital, Sales, Events etc</small></td>
+            <td><span class="badge badge-green">🟢 Active</span></td>
+            <td>Compliance, opt-in flows</td>
+            <td>Clarify vs Direct/Indirect</td>
+          </tr>
+          <tr class="fix">
+            <td>8</td>
+            <td><strong>Lead Status</strong><br/><small>Open, Working, Nurture, RAW etc</small></td>
+            <td><span class="badge badge-green">🟢 Active</span></td>
+            <td>—</td>
+            <td>Review — use as field instead</td>
+          </tr>
+          <tr class="keep">
+            <td>9</td>
+            <td><strong>Locale</strong><br/><small>JP / ANZ-ASEAN / IT / DE / FR / EMEA / US-CA</small></td>
+            <td><span class="badge badge-green">🟢 Active</span></td>
+            <td>Email footers (language)</td>
+            <td>Keep</td>
+          </tr>
+          <tr class="fix">
+            <td>10</td>
+            <td><strong>Marketable</strong><br/><small>Marketable vs Default</small></td>
+            <td><span class="badge badge-green">🟢 Active</span></td>
+            <td>—</td>
+            <td>WIP — finalise</td>
+          </tr>
+          <tr class="fix">
+            <td>11</td>
+            <td><strong>Marketable Status Breakdown</strong><br/><small>Unsub, Bounced, Invalid, Opted In etc</small></td>
+            <td><span class="badge badge-green">🟢 Active</span></td>
+            <td>Database hygiene</td>
+            <td>Review purpose</td>
+          </tr>
+          <tr class="keep">
+            <td>12</td>
+            <td><strong>Theatre</strong> (formerly Region)<br/><small>AMER / EMEA / APAC</small></td>
+            <td><span class="badge badge-green">🟢 Active</span></td>
+            <td><span class="count-chip">100+ email programs</span></td>
+            <td>Repurposed ✅</td>
+          </tr>
+          <tr class="fix">
+            <td>13</td>
+            <td><strong>Area</strong><br/><small>NEUR / WEUR / SEUR / CEUR / MEA / ANZ / India / Japan / ASEAN</small></td>
+            <td><span class="badge badge-yellow">🟡 Draft</span></td>
+            <td>—</td>
+            <td>Review order &amp; sub-area</td>
+          </tr>
+          <tr class="keep">
+            <td>14</td>
+            <td><strong>Type</strong><br/><small>Customer, Prospect, MSP, Reseller, OEM etc</small></td>
+            <td><span class="badge badge-green">🟢 Active</span></td>
+            <td><span class="count-chip">300+ programs</span></td>
+            <td>Review merge with Account Type</td>
+          </tr>
+          <tr class="fix">
+            <td>15</td>
+            <td><strong>Verticals</strong><br/><small>Healthcare, FinServ, Federal/DOD, Education etc</small></td>
+            <td><span class="badge badge-green">🟢 Active</span></td>
+            <td>—</td>
+            <td>Review &amp; Simplify</td>
+          </tr>
+          <tr class="retire">
+            <td>16</td>
+            <td><strong>zBuyer Persona — DNU</strong><br/><small>Economic Buyer, Architecture, Apps, Ops</small></td>
+            <td><span class="badge badge-green">🟢 Active</span></td>
+            <td>—</td>
+            <td>🔴 RETIRE</td>
+          </tr>
+          <tr class="retire">
+            <td>17</td>
+            <td><strong>zIT Job Sub Function — DNU</strong><br/><small>Security, Networking, Systems etc</small></td>
+            <td><span class="badge badge-green">🟢 Active</span></td>
+            <td><span class="count-chip">~20 programs</span></td>
+            <td>🔴 RE-PURPOSE</td>
+          </tr>
+          <tr class="retire">
+            <td>18</td>
+            <td><strong>zJob Title — DNU</strong><br/><small>Bad Titles / Business Level / Tech</small></td>
+            <td><span class="badge badge-green">🟢 Active</span></td>
+            <td><span class="count-chip">~35 programs</span> <span class="count-chip">~50 smartlists</span></td>
+            <td>🔴 UNAPPROVE</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       SECTION 4 — NEW ARCHITECTURE
+  ════════════════════════════════════════ -->
+  <section class="section" id="architecture">
+    <div class="section-tag">Step 4 — New Architecture</div>
+    <h2>New Segmentation Framework</h2>
+    <p class="section-sub">10 clean segmentations organised into 4 logical categories — making it simple to pick the right filter for any email send.</p>
+
+    <div class="cards-grid cards-4">
+
+      <div class="arch-card">
+        <div class="arch-header" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;">
+          <span>👤</span> Demographic
+        </div>
+        <div class="arch-body">
+          <div class="arch-item">
+            <div class="dot" style="background:#667eea"></div>
+            <div>Job Level<small>C-Level → Contributor</small></div>
+          </div>
+          <div class="arch-item">
+            <div class="dot" style="background:#764ba2"></div>
+            <div>Product Pillar<small>CXO, Security, Cloud, AI…</small></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <div class="arch-header" style="background:linear-gradient(135deg,#f7971e,#ffd200);color:#1a1f3a;">
+          <span>🏢</span> Firmographic
+        </div>
+        <div class="arch-body">
+          <div class="arch-item">
+            <div class="dot" style="background:#f7971e"></div>
+            <div>6Sense Stage<small>Awareness → Purchase</small></div>
+          </div>
+          <div class="arch-item">
+            <div class="dot" style="background:#ffd200"></div>
+            <div>Account Tier<small>Tier 1 (biggest) → Tier 5</small></div>
+          </div>
+          <div class="arch-item">
+            <div class="dot" style="background:#e67e22"></div>
+            <div>Account Type<small>Partner/Customer/Prospect</small></div>
+          </div>
+          <div class="arch-item">
+            <div class="dot" style="background:#d35400"></div>
+            <div>Vertical<small>Healthcare, FinServ, Federal…</small></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <div class="arch-header" style="background:linear-gradient(135deg,#11998e,#38ef7d);color:#fff;">
+          <span>🌍</span> Geo
+        </div>
+        <div class="arch-body">
+          <div class="arch-item">
+            <div class="dot" style="background:#11998e"></div>
+            <div>Theatre<small>AMER / EMEA / APAC</small></div>
+          </div>
+          <div class="arch-item">
+            <div class="dot" style="background:#38ef7d;"></div>
+            <div>Area<small>NEUR, WEUR, ANZ, MEA…</small></div>
+          </div>
+          <div class="arch-item">
+            <div class="dot" style="background:#27ae60"></div>
+            <div>Locale<small>Language / email footer</small></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <div class="arch-header" style="background:linear-gradient(135deg,#ff6b6b,#ee0979);color:#fff;">
+          <span>✅</span> Compliance
+        </div>
+        <div class="arch-body">
+          <div class="arch-item">
+            <div class="dot" style="background:#ff6b6b"></div>
+            <div>Compliance Group<small>Opt-in rules by country</small></div>
+          </div>
+          <div class="arch-item">
+            <div class="dot" style="background:#ee0979"></div>
+            <div>Marketable<small>Can we email them?</small></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       SECTION 5 — JOB LEVEL DEEP DIVE
+  ════════════════════════════════════════ -->
+  <section class="section" id="job-level">
+    <div class="section-tag">Step 5 — Demographic Deep Dive</div>
+    <h2>Job Level Segmentation</h2>
+    <p class="section-sub">Used by 500+ email programs. Marketo evaluates both the SFDC Job Level field AND job title keywords to assign each person.</p>
+
+    <div class="cards-grid cards-2" style="align-items:start;">
+      <div>
+        <div class="flow">
+
+          <div class="flow-step">
+            <div class="flow-left">
+              <div class="flow-circle" style="background:#ff6b6b20">👑</div>
+              <div class="flow-line"></div>
+            </div>
+            <div class="flow-content">
+              <div class="flow-question">Job Level = C-Level OR Title contains...</div>
+              <div class="flow-answer" style="border-color:#ff6b6b;">
+                <h4 style="color:#c0392b;">C-Level / CxO <span style="font-size:12px;font-weight:500;color:var(--muted)">— 307,491 people</span></h4>
+                <div class="keywords">
+                  <span class="kw">Chief Executive</span><span class="kw">CTO</span><span class="kw">CIO</span><span class="kw">CISO</span><span class="kw">CMO</span><span class="kw">COO</span><span class="kw">CFO</span><span class="kw">CDO</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-left">
+              <div class="flow-circle" style="background:#ffd93d20">🏆</div>
+              <div class="flow-line"></div>
+            </div>
+            <div class="flow-content">
+              <div class="flow-question">Job Level = Executive OR Title contains...</div>
+              <div class="flow-answer" style="border-color:#ffd93d;">
+                <h4 style="color:#b7950b;">VP / Exec <span style="font-size:12px;font-weight:500;color:var(--muted)">— 215,600 people</span></h4>
+                <div class="keywords">
+                  <span class="kw">Vice President</span><span class="kw">VP</span><span class="kw">SVP</span><span class="kw">President</span><span class="kw">General Manager</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-left">
+              <div class="flow-circle" style="background:#4ecdc420">📊</div>
+              <div class="flow-line"></div>
+            </div>
+            <div class="flow-content">
+              <div class="flow-question">Job Level = Director OR Title contains...</div>
+              <div class="flow-answer" style="border-color:#4ecdc4;">
+                <h4 style="color:#0e8b84;">Director <span style="font-size:12px;font-weight:500;color:var(--muted)">— 521,815 people</span></h4>
+                <div class="keywords">
+                  <span class="kw">Director</span><span class="kw">Dir</span><span class="kw">Directeur</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-left">
+              <div class="flow-circle" style="background:#6bcb7720">💼</div>
+              <div class="flow-line"></div>
+            </div>
+            <div class="flow-content">
+              <div class="flow-question">Job Level = Manager OR Title contains...</div>
+              <div class="flow-answer" style="border-color:#6bcb77;">
+                <h4 style="color:#2d8c3e;">Manager <span style="font-size:12px;font-weight:500;color:var(--muted)">— 1,099,453 people</span></h4>
+                <div class="keywords">
+                  <span class="kw">Head</span><span class="kw">Lead</span><span class="kw">Manager</span><span class="kw">Senior</span><span class="kw">Supervisor</span><span class="kw">Team Lead</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-left">
+              <div class="flow-circle" style="background:#a29bfe20">🔧</div>
+              <div class="flow-line"></div>
+            </div>
+            <div class="flow-content">
+              <div class="flow-question">Job Level = Contributor OR Title contains...</div>
+              <div class="flow-answer" style="border-color:#a29bfe;">
+                <h4 style="color:#6c5ce7;">Contributor <span style="font-size:12px;font-weight:500;color:var(--muted)">— 960,608 people</span></h4>
+                <div class="keywords">
+                  <span class="kw">Engineer</span><span class="kw">Analyst</span><span class="kw">Developer</span><span class="kw">Architect</span><span class="kw">Specialist</span><span class="kw">Admin</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-left">
+              <div class="flow-circle" style="background:#dde2f020">📭</div>
+            </div>
+            <div class="flow-content">
+              <div class="flow-question">Title field is empty?</div>
+              <div class="flow-answer" style="border-color:#dde2f0;">
+                <h4 style="color:var(--muted);">Job Title Empty / Default <span style="font-size:12px;font-weight:500">— 317k + 11 people</span></h4>
+                <p>No title populated, or doesn't match any rule above</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="card" style="position:sticky;top:20px;">
+        <div style="font-size:13px;font-weight:700;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:16px;">Segment Sizes</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+              <span style="font-weight:600;">Manager</span><span style="color:var(--muted);">1,099,453</span>
+            </div>
+            <div style="background:var(--bg);border-radius:6px;height:8px;overflow:hidden;">
+              <div style="background:#6bcb77;height:100%;width:100%;border-radius:6px;"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+              <span style="font-weight:600;">Contributor</span><span style="color:var(--muted);">960,608</span>
+            </div>
+            <div style="background:var(--bg);border-radius:6px;height:8px;overflow:hidden;">
+              <div style="background:#a29bfe;height:100%;width:87%;border-radius:6px;"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+              <span style="font-weight:600;">Director</span><span style="color:var(--muted);">521,815</span>
+            </div>
+            <div style="background:var(--bg);border-radius:6px;height:8px;overflow:hidden;">
+              <div style="background:#4ecdc4;height:100%;width:47%;border-radius:6px;"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+              <span style="font-weight:600;">Job Title Empty</span><span style="color:var(--muted);">316,974</span>
+            </div>
+            <div style="background:var(--bg);border-radius:6px;height:8px;overflow:hidden;">
+              <div style="background:#dde2f0;height:100%;width:29%;border-radius:6px;"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+              <span style="font-weight:600;">C-Level / CxO</span><span style="color:var(--muted);">307,491</span>
+            </div>
+            <div style="background:var(--bg);border-radius:6px;height:8px;overflow:hidden;">
+              <div style="background:#ff6b6b;height:100%;width:28%;border-radius:6px;"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+              <span style="font-weight:600;">VP / Exec</span><span style="color:var(--muted);">215,600</span>
+            </div>
+            <div style="background:var(--bg);border-radius:6px;height:8px;overflow:hidden;">
+              <div style="background:#ffd93d;height:100%;width:20%;border-radius:6px;"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+              <span style="font-weight:600;">Default</span><span style="color:var(--muted);">11</span>
+            </div>
+            <div style="background:var(--bg);border-radius:6px;height:8px;overflow:hidden;">
+              <div style="background:#dde2f0;height:100%;width:1%;border-radius:6px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       SECTION 6 — PRODUCT PILLAR DEEP DIVE
+  ════════════════════════════════════════ -->
+  <section class="section" id="product-pillar">
+    <div class="section-tag">Step 6 — Demographic Deep Dive</div>
+    <h2>Product Pillar Segmentation</h2>
+    <p class="section-sub">Uses a blend of 4 fields: <strong>Job Title + GTM Play + Campaign Theme + Product Persona</strong>. Tells us which product area each person is most relevant to.</p>
+
+    <div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap:16px;">
+
+      <div class="card" style="border-top: 4px solid #2d1b69;">
+        <div style="font-size:28px;margin-bottom:10px;">👔</div>
+        <h4 style="font-size:15px;font-weight:700;margin-bottom:6px;color:#2d1b69;">Other — CXO</h4>
+        <p style="font-size:13px;color:var(--muted);">Job Level is C-Level/CxO, or title contains Chief, CTO, CEO, CIO, CISO (in EN/FR/DE/IT/JP)</p>
+        <div style="margin-top:10px;font-size:12px;font-weight:700;color:#2d1b69;">255,824 people</div>
+      </div>
+
+      <div class="card" style="border-top: 4px solid #0984e3;">
+        <div style="font-size:28px;margin-bottom:10px;">🗄️</div>
+        <h4 style="font-size:15px;font-weight:700;margin-bottom:6px;color:#0984e3;">Database</h4>
+        <p style="font-size:13px;color:var(--muted);">Title contains Database Admin, DBA (in 5 languages). Campaign theme or Product Persona = Database.</p>
+      </div>
+
+      <div class="card" style="border-top: 4px solid #00b894;">
+        <div style="font-size:28px;margin-bottom:10px;">☁️</div>
+        <h4 style="font-size:15px;font-weight:700;margin-bottom:6px;color:#00b894;">SaaS</h4>
+        <p style="font-size:13px;color:var(--muted);">Title: M365, Microsoft, Jira, Salesforce, VMWare, Apps. Or GTM Play / Campaign Theme = SaaS.</p>
+        <div style="margin-top:10px;font-size:12px;font-weight:700;color:#00b894;">164,734 people</div>
+      </div>
+
+      <div class="card" style="border-top: 4px solid #6c5ce7;">
+        <div style="font-size:28px;margin-bottom:10px;">🌩️</div>
+        <h4 style="font-size:15px;font-weight:700;margin-bottom:6px;color:#6c5ce7;">Cloud</h4>
+        <p style="font-size:13px;color:var(--muted);">Title contains "Cloud" (EN) or クラウド (JP). Or Product Persona / Campaign Theme / GTM Play = Cloud.</p>
+        <div style="margin-top:10px;font-size:12px;font-weight:700;color:#6c5ce7;">190,093 people</div>
+      </div>
+
+      <div class="card" style="border-top: 4px solid #e17055;">
+        <div style="font-size:28px;margin-bottom:10px;">🤖</div>
+        <h4 style="font-size:15px;font-weight:700;margin-bottom:6px;color:#e17055;">AI</h4>
+        <p style="font-size:13px;color:var(--muted);">Title: AI, Machine Learning, Data Scientist, Applied Researcher (5 languages). Or GTM Play / Campaign Theme = AI.</p>
+      </div>
+
+      <div class="card" style="border-top: 4px solid #fd79a8;">
+        <div style="font-size:28px;margin-bottom:10px;">🔐</div>
+        <h4 style="font-size:15px;font-weight:700;margin-bottom:6px;color:#fd79a8;">Identity</h4>
+        <p style="font-size:13px;color:var(--muted);">Title: Identity, IAM, PAM, Fraud Detection, Access Management. Or GTM Play contains Identity.</p>
+      </div>
+
+      <div class="card" style="border-top: 4px solid #a29bfe;">
+        <div style="font-size:28px;margin-bottom:10px;">🤖🔐</div>
+        <h4 style="font-size:15px;font-weight:700;margin-bottom:6px;color:#a29bfe;">AI &amp; Identity</h4>
+        <p style="font-size:13px;color:var(--muted);">Combination of both AI and Identity signals in title or GTM Play. Merged segment for cross-pillar targeting.</p>
+        <div style="margin-top:10px;font-size:12px;font-weight:700;color:#a29bfe;">47,628 people</div>
+      </div>
+
+      <div class="card" style="border-top: 4px solid #ff6b6b;">
+        <div style="font-size:28px;margin-bottom:10px;">🛡️</div>
+        <h4 style="font-size:15px;font-weight:700;margin-bottom:6px;color:#ff6b6b;">DSPM / InfoSec / Security</h4>
+        <p style="font-size:13px;color:var(--muted);">Title: InfoSec, Information Security, Access (5 languages). Or Product Persona / GTM Play = Security.</p>
+        <div style="margin-top:10px;font-size:12px;font-weight:700;color:#ff6b6b;">538,530 people</div>
+      </div>
+
+      <div class="card" style="border-top: 4px solid #fdcb6e;">
+        <div style="font-size:28px;margin-bottom:10px;">💾</div>
+        <h4 style="font-size:15px;font-weight:700;margin-bottom:6px;color:#e17055;">Unstructured Data</h4>
+        <p style="font-size:13px;color:var(--muted);">Title: NAS, Unstructured Data, Network Attached Storage. Or GTM Play = NAS Protection.</p>
+        <div style="margin-top:10px;font-size:12px;font-weight:700;color:#e17055;">12,695 people</div>
+      </div>
+
+    </div>
+
+    <div class="card" style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div style="background:rgba(26,31,58,0.05);border-radius:12px;padding:18px;">
+        <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Other — Enterprise</div>
+        <p style="font-size:13px;">Account Tier is <strong>1, 2, or 3</strong> — larger accounts not matching a named pillar above</p>
+        <div style="margin-top:8px;font-size:13px;font-weight:700;">1,211,176 people</div>
+      </div>
+      <div style="background:rgba(26,31,58,0.05);border-radius:12px;padding:18px;">
+        <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Other — Non Enterprise</div>
+        <p style="font-size:13px;">Account Tier is <strong>4 or 5</strong> — smaller accounts not matching a named pillar above</p>
+        <div style="margin-top:8px;font-size:13px;font-weight:700;">904,183 people</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       SECTION 7 — GEO HIERARCHY
+  ════════════════════════════════════════ -->
+  <section class="section" id="geo">
+    <div class="section-tag">Step 7 — Geo Segmentations</div>
+    <h2>Geographic Hierarchy</h2>
+    <p class="section-sub">Three levels of geographic precision — from broad region all the way down to language locale for email footers.</p>
+
+    <div class="card">
+
+      <div class="geo-level">
+        <div class="geo-level-label">Level 1 — Theatre (Broadest) · Used for whole-region sends</div>
+        <div class="geo-boxes">
+          <div class="geo-box" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;">
+            🇺🇸 AMER
+            <small>USA, Canada</small>
+          </div>
+          <div class="geo-box" style="background:linear-gradient(135deg,#11998e,#38ef7d);color:#fff;">
+            🌍 EMEA
+            <small>Europe, Middle East, Africa</small>
+          </div>
+          <div class="geo-box" style="background:linear-gradient(135deg,#f7971e,#ffd200);color:#1a1f3a;">
+            🌏 APAC
+            <small>Asia Pacific</small>
+          </div>
+          <div class="geo-box" style="background:#dde2f0;color:var(--muted);">
+            ⬛ Default
+            <small>All others</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="geo-arrow">↓ Zoom in further with Area</div>
+
+      <div class="geo-level">
+        <div class="geo-level-label">Level 2 — Area (Sub-region) · For targeted EMEA / APAC sends</div>
+        <div class="geo-boxes">
+          <div class="geo-box" style="background:#f0f2f8;border:2px solid #667eea;color:#667eea;font-size:13px;">
+            AMER-PS<small>Gov/Fed/Edu (USA)</small>
+          </div>
+          <div class="geo-box" style="background:#f0f2f8;border:2px solid #11998e;color:#11998e;font-size:13px;">
+            NEUR<small>Netherlands, Scandinavia, Belgium</small>
+          </div>
+          <div class="geo-box" style="background:#f0f2f8;border:2px solid #11998e;color:#11998e;font-size:13px;">
+            WEUR<small>UK, Ireland</small>
+          </div>
+          <div class="geo-box" style="background:#f0f2f8;border:2px solid #11998e;color:#11998e;font-size:13px;">
+            SEUR<small>Italy, France, Spain, Portugal</small>
+          </div>
+          <div class="geo-box" style="background:#f0f2f8;border:2px solid #11998e;color:#11998e;font-size:13px;">
+            CEUR<small>Germany, Switzerland, Austria</small>
+          </div>
+          <div class="geo-box" style="background:#f0f2f8;border:2px solid #e17055;color:#e17055;font-size:13px;">
+            MEA<small>South Africa, UAE, Saudi Arabia...</small>
+          </div>
+          <div class="geo-box" style="background:#f0f2f8;border:2px solid #f7971e;color:#f7971e;font-size:13px;">
+            ANZ<small>Australia, New Zealand</small>
+          </div>
+          <div class="geo-box" style="background:#f0f2f8;border:2px solid #f7971e;color:#f7971e;font-size:13px;">
+            India<small>Country: India</small>
+          </div>
+          <div class="geo-box" style="background:#f0f2f8;border:2px solid #f7971e;color:#f7971e;font-size:13px;">
+            Japan<small>Country: Japan</small>
+          </div>
+          <div class="geo-box" style="background:#f0f2f8;border:2px solid #f7971e;color:#f7971e;font-size:13px;">
+            ASEAN<small>SG, HK, TH, PH, MY, VN</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="geo-arrow">↓ Zoom in further with Locale</div>
+
+      <div class="geo-level">
+        <div class="geo-level-label">Level 3 — Locale (Language) · Drives which email footer template is shown</div>
+        <div class="geo-boxes">
+          <div class="geo-box" style="background:#2d3561;color:#fff;font-size:13px;">🇯🇵 JP<small>Japan</small></div>
+          <div class="geo-box" style="background:#2d3561;color:#fff;font-size:13px;">🌏 ANZ-ASEAN<small>AU/NZ + SE Asia</small></div>
+          <div class="geo-box" style="background:#2d3561;color:#fff;font-size:13px;">🇮🇹 IT<small>Italy</small></div>
+          <div class="geo-box" style="background:#2d3561;color:#fff;font-size:13px;">🇩🇪 DE<small>Germany, AT, CH</small></div>
+          <div class="geo-box" style="background:#2d3561;color:#fff;font-size:13px;">🇫🇷 FR<small>France</small></div>
+          <div class="geo-box" style="background:#2d3561;color:#fff;font-size:13px;">🌍 EMEA<small>Rest of EMEA</small></div>
+          <div class="geo-box" style="background:#4ecdc4;color:#fff;font-size:13px;">🏖️ US-CA<small>California state only</small></div>
+          <div class="geo-box" style="background:#dde2f0;color:var(--muted);font-size:13px;">⬛ Default<small>All others</small></div>
+        </div>
+      </div>
+
+      <div style="background:rgba(78,205,196,0.1);border:1px solid rgba(78,205,196,0.3);border-radius:12px;padding:16px;margin-top:8px;font-size:13px;">
+        <strong style="color:var(--navy);">Why US-CA is special:</strong> California (CCPA law) requires different footer language — identified by State field = California OR Inferred State = CA.
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       SECTION 8 — COMPLIANCE FLOW
+  ════════════════════════════════════════ -->
+  <section class="section" id="compliance">
+    <div class="section-tag">Step 8 — Compliance &amp; Marketability</div>
+    <h2>Compliance Group Flow</h2>
+    <p class="section-sub">Every person is sorted into a compliance group based on their country. This determines the opt-in rules that apply before you can email them.</p>
+
+    <div class="compliance-grid">
+
+      <div class="comp-card" style="background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;">
+        <div class="comp-icon">🔴</div>
+        <h4>Explicit — Double</h4>
+        <p>Must confirm opt-in <strong>TWICE</strong></p>
+        <div class="comp-countries">Germany · Austria · Switzerland</div>
+      </div>
+
+      <div class="comp-card" style="background:linear-gradient(135deg,#f39c12,#d68910);color:#fff;">
+        <div class="comp-icon">🟡</div>
+        <h4>Explicit — Single</h4>
+        <p>Must opt-in <strong>once</strong> before contact</p>
+        <div class="comp-countries">Most of Europe · Australia · Japan · Brazil · Canada · many more</div>
+      </div>
+
+      <div class="comp-card" style="background:linear-gradient(135deg,#27ae60,#229954);color:#fff;">
+        <div class="comp-icon">🟢</div>
+        <h4>Implied</h4>
+        <p>Can contact unless they <strong>opt out</strong></p>
+        <div class="comp-countries">United States · India · many global markets</div>
+      </div>
+
+      <div class="comp-card" style="background:linear-gradient(135deg,#2c3e50,#1a252f);color:#fff;">
+        <div class="comp-icon">⛔</div>
+        <h4>Restricted</h4>
+        <p><strong>Do not contact.</strong> Sanctioned or restricted countries</p>
+        <div class="comp-countries">Russia · Iran · North Korea · many others</div>
+      </div>
+
+      <div class="comp-card" style="background:linear-gradient(135deg,#7f8c8d,#636e72);color:#fff;">
+        <div class="comp-icon">❓</div>
+        <h4>Unknown</h4>
+        <p>No policy — usually <strong>no country</strong> populated in the record</p>
+        <div class="comp-countries">No country value in system</div>
+      </div>
+
+    </div>
+
+    <div class="card" style="margin-top:28px;">
+      <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:16px;">Marketable Segmentation — Can we actually email them?</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div style="background:rgba(107,203,119,0.12);border-radius:12px;padding:18px;border:1px solid rgba(107,203,119,0.3);">
+          <div style="font-size:22px;margin-bottom:8px;">✅</div>
+          <div style="font-weight:700;margin-bottom:4px;">Marketable — 1,656,244</div>
+          <div style="font-size:13px;color:var(--muted);">Valid email, opted in (where required), not bounced, not unsubscribed, not suspended</div>
+        </div>
+        <div style="background:rgba(255,107,107,0.12);border-radius:12px;padding:18px;border:1px solid rgba(255,107,107,0.3);">
+          <div style="font-size:22px;margin-bottom:8px;">❌</div>
+          <div style="font-weight:700;margin-bottom:4px;">Default (not marketable) — 1,784,576</div>
+          <div style="font-size:13px;color:var(--muted);">Unsubscribed · Invalid email · Hard bounce · Marketing suspended · Not opted in · No country</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       SECTION 9 — CXO PROTECTION
+  ════════════════════════════════════════ -->
+  <section class="section" id="cxo">
+    <div class="section-tag">Step 9 — White Glove Rule</div>
+    <h2>CXO Protection</h2>
+    <p class="section-sub">The most important rule in the entire segmentation project.</p>
+
+    <div class="cxo-alert">
+      <div class="cxo-icon-wrap">⭐</div>
+      <div>
+        <h3>CXO Audience — Do Not Use (DNU)</h3>
+        <p>A premium group of C-Level executives at Fortune 500 / Global 2000 companies. These contacts are ring-fenced and must never appear in a regular marketing email batch.</p>
+        <div class="cxo-rules">
+          <div class="cxo-rule">✅ Who qualifies: C-Level job level / title + F500 or G2K account tier</div>
+          <div class="cxo-rule">🚫 Excluded from ALL regular marketing sends automatically</div>
+          <div class="cxo-rule">👔 ONLY the CXO Transformation Team may email them</div>
+          <div class="cxo-rule">⚠️ Daniela must validate the rules before segment is activated</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       SECTION 10 — CHEAT SHEET
+  ════════════════════════════════════════ -->
+  <section class="section" id="cheatsheet">
+    <div class="section-tag">Step 10 — Quick Reference</div>
+    <h2>Cheat Sheet</h2>
+    <p class="section-sub">Not sure which segmentation to use? Use this table to pick the right filter for any email campaign.</p>
+
+    <div class="card" style="overflow-x:auto;">
+      <table class="cheat-table">
+        <thead>
+          <tr>
+            <th>Use Case</th>
+            <th>Segmentation to Use</th>
+            <th>Segment(s) to Pick</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Email prospects only</td>
+            <td><span class="seg-chip">Account Type</span></td>
+            <td>Prospect + Active Opportunity + Closed/Lost</td>
+            <td>Combine with Marketable</td>
+          </tr>
+          <tr>
+            <td>Email existing customers</td>
+            <td><span class="seg-chip">Account Type</span></td>
+            <td>Customer</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td>Target C-Suite / senior leaders</td>
+            <td><span class="seg-chip">Job Level</span></td>
+            <td>C-Level/CxO or VP/Exec</td>
+            <td>Don't forget to exclude CXO-DNU</td>
+          </tr>
+          <tr>
+            <td>Target by product interest</td>
+            <td><span class="seg-chip">Product Pillar</span></td>
+            <td>Security / Cloud / AI / SaaS etc</td>
+            <td>Uses job title + GTM signals</td>
+          </tr>
+          <tr>
+            <td>Send to a whole region</td>
+            <td><span class="seg-chip">Theatre</span></td>
+            <td>AMER / EMEA / APAC</td>
+            <td>Broadest geo filter</td>
+          </tr>
+          <tr>
+            <td>Send to specific country cluster</td>
+            <td><span class="seg-chip">Area</span></td>
+            <td>NEUR / WEUR / CEUR / ANZ etc</td>
+            <td>Sub-region precision</td>
+          </tr>
+          <tr>
+            <td>Show correct email footer</td>
+            <td><span class="seg-chip">Locale</span></td>
+            <td>DE / FR / JP / EMEA etc</td>
+            <td>Used in Dynamic Content only</td>
+          </tr>
+          <tr>
+            <td>Target a specific industry</td>
+            <td><span class="seg-chip">Vertical</span></td>
+            <td>Healthcare / FinServ / Federal / Manufacturing</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td>Target big/enterprise accounts</td>
+            <td><span class="seg-chip">Account Tier</span></td>
+            <td>Tier 1 (biggest) → Tier 3</td>
+            <td>Tier 1 = highest value accounts</td>
+          </tr>
+          <tr>
+            <td>Target accounts showing intent</td>
+            <td><span class="seg-chip">6Sense Stage</span></td>
+            <td>Decision / Purchase</td>
+            <td>Late-stage buying signals</td>
+          </tr>
+          <tr>
+            <td>Ensure recipients can receive email</td>
+            <td><span class="seg-chip">Marketable</span></td>
+            <td>Marketable</td>
+            <td>Always add this as a baseline filter</td>
+          </tr>
+          <tr>
+            <td>VIP / executive outreach</td>
+            <td><span class="seg-chip">CXO — DNU</span></td>
+            <td>N/A — for exclusion only</td>
+            <td style="color:#c0392b;font-weight:600;">CXO team only. Never use in mass sends.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ── -->
+  <div class="footer">
+    Marketo Segmentations Visual Guide · Based on <strong>Segmentation — WIP.pdf</strong> · Built for internal marketing use
+  </div>
+
+</main>
+</div>
+
+<script>
+  // Highlight active nav link on scroll
+  const sections = document.querySelectorAll('section[id], div[id]');
+  const links = document.querySelectorAll('.sidebar a');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 100) current = s.id;
+    });
+    links.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  });
+</script>
+
+</body>
+</html>
