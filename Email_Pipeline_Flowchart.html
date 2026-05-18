@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Pipeline Flowchart</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f8f6f3; color: #333; }
+
+  .tabs { display: flex; gap: 4px; padding: 20px 20px 0; max-width: 1200px; margin: 0 auto; }
+  .tab { padding: 10px 22px; border-radius: 10px 10px 0 0; cursor: pointer; font-size: 14px; font-weight: 600;
+         background: #e8e4df; color: #666; border: none; transition: all 0.2s; }
+  .tab.active { background: #fff; color: #333; box-shadow: 0 -2px 8px rgba(0,0,0,0.06); }
+  .tab:hover { background: #f0ece7; }
+
+  .tab-content { display: none; max-width: 1200px; margin: 0 auto; background: #fff;
+                 border-radius: 0 12px 12px 12px; padding: 30px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .tab-content.active { display: block; }
+
+  h1 { font-size: 22px; color: #444; margin-bottom: 6px; }
+  .subtitle { color: #888; font-size: 13px; margin-bottom: 30px; }
+
+  /* PIPELINE FLOW */
+  .pipeline { display: flex; flex-direction: column; gap: 0; align-items: center; }
+  .step-box { width: 100%; max-width: 700px; border-radius: 14px; padding: 22px 26px; position: relative; }
+  .step-box h3 { font-size: 15px; margin-bottom: 4px; }
+  .step-box .table-name { font-family: 'Courier New', monospace; font-size: 12px; color: #666; margin-bottom: 10px; }
+  .step-box .desc { font-size: 13px; line-height: 1.6; color: #555; }
+  .step-box .tag { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-right: 4px; margin-top: 4px; }
+
+  .s1 { background: #fef3e2; border: 2px solid #f5d89a; }
+  .s1 .tag { background: #f5d89a; color: #7a5c00; }
+  .s2 { background: #e8f5e9; border: 2px solid #a5d6a7; }
+  .s2 .tag { background: #a5d6a7; color: #1b5e20; }
+  .s3 { background: #e3f2fd; border: 2px solid #90caf9; }
+  .s3 .tag { background: #90caf9; color: #0d47a1; }
+  .s4 { background: #fce4ec; border: 2px solid #f48fb1; }
+  .s4 .tag { background: #f48fb1; color: #880e4f; }
+
+  .arrow { width: 3px; height: 36px; background: #ccc; position: relative; }
+  .arrow::after { content: ''; position: absolute; bottom: -6px; left: -5px;
+                  border-left: 6.5px solid transparent; border-right: 6.5px solid transparent;
+                  border-top: 8px solid #ccc; }
+
+  /* VENN */
+  .venn-section { margin: 30px 0; }
+  .venn-section h2 { font-size: 17px; color: #444; margin-bottom: 20px; text-align: center; }
+  .venn-container { display: flex; justify-content: center; align-items: center; }
+
+  svg text { font-family: 'Segoe UI', system-ui, sans-serif; }
+
+  /* JOIN CARDS */
+  .join-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
+  .join-card { border-radius: 12px; padding: 18px; }
+  .join-card h4 { font-size: 13px; margin-bottom: 6px; }
+  .join-card p { font-size: 12px; color: #555; line-height: 1.5; }
+  .join-card .key { font-family: monospace; font-size: 11px; background: rgba(0,0,0,0.06); padding: 2px 6px; border-radius: 4px; }
+  .jc1 { background: #fff8e1; border: 1px solid #ffe082; }
+  .jc2 { background: #e8f5e9; border: 1px solid #a5d6a7; }
+  .jc3 { background: #e3f2fd; border: 1px solid #90caf9; }
+  .jc4 { background: #f3e5f5; border: 1px solid #ce93d8; }
+  .jc5 { background: #fce4ec; border: 1px solid #f48fb1; }
+  .jc6 { background: #e0f2f1; border: 1px solid #80cbc4; }
+
+  /* COLUMNS TABLE */
+  .col-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 12px; }
+  .col-table th { background: #f5f5f5; padding: 8px 12px; text-align: left; font-weight: 600; border-bottom: 2px solid #ddd; }
+  .col-table td { padding: 7px 12px; border-bottom: 1px solid #eee; }
+  .col-table tr:hover { background: #fafafa; }
+  .src-tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+  .src-marketo { background: #fff3e0; color: #e65100; }
+  .src-sfdc { background: #e3f2fd; color: #1565c0; }
+  .src-derived { background: #f3e5f5; color: #7b1fa2; }
+  .src-activity { background: #e8f5e9; color: #2e7d32; }
+  .src-campaign { background: #e0f7fa; color: #00695c; }
+  .src-time { background: #fce4ec; color: #c62828; }
+
+  .note { background: #fffde7; border-left: 4px solid #ffd54f; padding: 12px 16px; border-radius: 0 8px 8px 0;
+          font-size: 12px; color: #666; margin-top: 20px; line-height: 1.6; }
+  .note strong { color: #333; }
+
+  @media (max-width: 768px) {
+    .join-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('pipeline')">Pipeline Flow</button>
+  <button class="tab" onclick="showTab('venn')">Venn Diagrams</button>
+  <button class="tab" onclick="showTab('joins')">Join Details</button>
+  <button class="tab" onclick="showTab('columns')">Column Sources</button>
+</div>
+
+<!-- TAB 1: PIPELINE -->
+<div id="pipeline" class="tab-content active">
+  <h1>Email Data Pipeline</h1>
+  <p class="subtitle">Run in order: 1 &rarr; 2 &rarr; 3 &rarr; 4</p>
+
+  <div class="pipeline">
+    <!-- STEP 1 -->
+    <div class="step-box s1">
+      <h3>Step 1 &mdash; Lead Enrichment</h3>
+      <div class="table-name">EMAIL_PERFORMANCE_MAREKTO_LEADS_DATA</div>
+      <div class="desc">
+        Maps every <strong>Marketo lead</strong> to their <strong>SFDC contact</strong> record.
+        One row per lead with SFDC attributes attached.
+      </div>
+      <div style="margin-top: 10px;">
+        <span class="tag">PV_LEAD (Marketo)</span>
+        <span class="tag">PV_LEAD_CONTACT (SFDC)</span>
+      </div>
+    </div>
+
+    <div class="arrow"></div>
+
+    <!-- STEP 2 -->
+    <div class="step-box s2">
+      <h3>Step 2 &mdash; Email Activity Fact Table</h3>
+      <div class="table-name">FINAL_EMAIL_ACTIVITY_TABLE</div>
+      <div class="desc">
+        One row per <strong>email send event</strong>. Enriched with delivery, bounce, open, click,
+        unsubscribe status + lead data from Step 1.
+      </div>
+      <div style="margin-top: 10px;">
+        <span class="tag">PV_ACTIVITY_SEND_EMAIL</span>
+        <span class="tag">6 Activity CTEs</span>
+        <span class="tag">Step 1 table</span>
+      </div>
+    </div>
+
+    <div class="arrow"></div>
+
+    <!-- STEP 3 -->
+    <div class="step-box s3">
+      <h3>Step 3 &mdash; Campaign Mapping</h3>
+      <div class="table-name">Email_campaign_mapping</div>
+      <div class="desc">
+        Fuzzy-matches each email name (<strong>PRIMARY_ATTRIBUTE_VALUE</strong>) to a
+        <strong>PV_CAMPAIGN</strong> record. Scores using Jaccard, Jaro-Winkler, edit distance.
+      </div>
+      <div style="margin-top: 10px;">
+        <span class="tag">Step 2 table (email names)</span>
+        <span class="tag">PV_CAMPAIGN</span>
+      </div>
+    </div>
+
+    <div class="arrow"></div>
+
+    <!-- STEP 4 -->
+    <div class="step-box s4">
+      <h3>Step 4 &mdash; Dashboard Table (Tableau)</h3>
+      <div class="table-name">EMAIL_PERFORMANCE_DASHBOARD_FINAL</div>
+      <div class="desc">
+        Combines email activity + campaign mapping + account enrichment + fiscal time.
+        This is the <strong>final table consumed by Tableau</strong>.
+      </div>
+      <div style="margin-top: 10px;">
+        <span class="tag">Step 2 table (driver)</span>
+        <span class="tag">Step 3 table</span>
+        <span class="tag">PV_ACCOUNT</span>
+        <span class="tag">PV_TIME</span>
+        <span class="tag">EMAIL_OPT_IN_FLAG_Y</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Key:</strong> PV_LEAD_CONTACT is used only once (Step 1). All subsequent steps
+    get lead/contact/account data through the pipeline, avoiding redundant joins.
+  </div>
+</div>
+
+<!-- TAB 2: VENN DIAGRAMS -->
+<div id="venn" class="tab-content">
+  <h1>Venn Diagrams &mdash; Left Joins</h1>
+  <p class="subtitle">Shows what data comes from where in each step</p>
+
+  <!-- STEP 1 VENN -->
+  <div class="venn-section">
+    <h2>Step 1: PV_LEAD left join PV_LEAD_CONTACT</h2>
+    <div class="venn-container">
+      <svg width="520" height="280" viewBox="0 0 520 280">
+        <ellipse cx="190" cy="140" rx="150" ry="110" fill="#fef3e2" stroke="#f5d89a" stroke-width="2.5" opacity="0.85"/>
+        <ellipse cx="330" cy="140" rx="150" ry="110" fill="#e3f2fd" stroke="#90caf9" stroke-width="2.5" opacity="0.7"/>
+        <text x="120" y="100" font-size="12" font-weight="600" fill="#7a5c00">PV_LEAD</text>
+        <text x="110" y="118" font-size="11" fill="#999">3.56M Marketo leads</text>
+        <text x="110" y="136" font-size="11" fill="#999">MARKETO_LEAD_ID</text>
+        <text x="110" y="154" font-size="11" fill="#999">SFDC_CONTACT_ID</text>
+        <text x="110" y="172" font-size="11" fill="#999">bounce/opt-in data</text>
+        <text x="225" y="210" font-size="12" font-weight="700" fill="#2e7d32">Matched</text>
+        <text x="218" y="228" font-size="11" fill="#555">~3.45M leads</text>
+        <text x="210" y="246" font-size="11" fill="#555">get SFDC attributes</text>
+        <text x="360" y="100" font-size="12" font-weight="600" fill="#1565c0">PV_LEAD_CONTACT</text>
+        <text x="360" y="118" font-size="11" fill="#999">3.54M SFDC records</text>
+        <text x="360" y="136" font-size="11" fill="#999">email, title, company</text>
+        <text x="360" y="154" font-size="11" fill="#999">job, account, geo</text>
+      </svg>
+    </div>
+    <div class="note">
+      <strong>LEFT JOIN</strong> keeps all Marketo leads. ~110K leads have no SFDC match (SFDC_MAPPING = NO).
+      These still flow through the pipeline with NULL SFDC attributes.
+    </div>
+  </div>
+
+  <!-- STEP 2 VENN -->
+  <div class="venn-section">
+    <h2>Step 2: Send Events left join Activity CTEs + Lead Data</h2>
+    <div class="venn-container">
+      <svg width="620" height="300" viewBox="0 0 620 300">
+        <ellipse cx="180" cy="150" rx="145" ry="115" fill="#e8f5e9" stroke="#a5d6a7" stroke-width="2.5" opacity="0.85"/>
+        <ellipse cx="310" cy="110" rx="95" ry="65" fill="#fff3e0" stroke="#ffcc80" stroke-width="2" opacity="0.6"/>
+        <ellipse cx="310" cy="200" rx="95" ry="65" fill="#e0f2f1" stroke="#80cbc4" stroke-width="2" opacity="0.6"/>
+        <ellipse cx="470" cy="150" rx="120" ry="100" fill="#fef3e2" stroke="#f5d89a" stroke-width="2.5" opacity="0.7"/>
+        <text x="90" y="100" font-size="12" font-weight="600" fill="#1b5e20">SEND_EMAIL</text>
+        <text x="80" y="118" font-size="11" fill="#888">All send events</text>
+        <text x="80" y="136" font-size="11" fill="#888">(driver table)</text>
+        <text x="80" y="154" font-size="11" fill="#888">ID, LEAD_ID</text>
+        <text x="80" y="172" font-size="11" fill="#888">CAMPAIGN_ID</text>
+        <text x="80" y="190" font-size="11" fill="#888">ACTIVITY_DATE</text>
+        <text x="255" y="82" font-size="11" font-weight="600" fill="#e65100">Activity CTEs</text>
+        <text x="250" y="100" font-size="10" fill="#888">Delivered, Bounced</text>
+        <text x="250" y="115" font-size="10" fill="#888">Open, Click, Unsub</text>
+        <text x="250" y="195" font-size="11" font-weight="600" fill="#00695c">Pre-aggregated</text>
+        <text x="250" y="213" font-size="10" fill="#888">MIN/MAX dates</text>
+        <text x="250" y="228" font-size="10" fill="#888">1 row per send</text>
+        <text x="410" y="115" font-size="12" font-weight="600" fill="#7a5c00">Step 1 table</text>
+        <text x="410" y="133" font-size="11" fill="#888">Lead enrichment</text>
+        <text x="410" y="151" font-size="11" fill="#888">SFDC mapping</text>
+        <text x="410" y="169" font-size="11" fill="#888">Account data</text>
+        <text x="410" y="187" font-size="11" fill="#888">Contact info</text>
+      </svg>
+    </div>
+    <div class="note">
+      <strong>All 6 activity joins are pre-aggregated CTEs</strong> (MIN/MAX) to prevent fanout.
+      Each send event gets at most 1 matching row from each activity type.
+    </div>
+  </div>
+
+  <!-- STEP 4 VENN -->
+  <div class="venn-section">
+    <h2>Step 4: Email Activity (driver) + Campaign Map + Account + Time</h2>
+    <div class="venn-container">
+      <svg width="600" height="320" viewBox="0 0 600 320">
+        <ellipse cx="200" cy="160" rx="160" ry="130" fill="#e8f5e9" stroke="#a5d6a7" stroke-width="2.5" opacity="0.85"/>
+        <ellipse cx="380" cy="100" rx="110" ry="70" fill="#e3f2fd" stroke="#90caf9" stroke-width="2" opacity="0.65"/>
+        <ellipse cx="420" cy="200" rx="100" ry="60" fill="#f3e5f5" stroke="#ce93d8" stroke-width="2" opacity="0.6"/>
+        <ellipse cx="320" cy="270" rx="90" ry="40" fill="#fce4ec" stroke="#f48fb1" stroke-width="2" opacity="0.6"/>
+        <text x="90" y="110" font-size="13" font-weight="700" fill="#1b5e20">FINAL_EMAIL</text>
+        <text x="90" y="128" font-size="13" font-weight="700" fill="#1b5e20">ACTIVITY_TABLE</text>
+        <text x="100" y="150" font-size="11" fill="#888">Driver table</text>
+        <text x="100" y="168" font-size="11" fill="#888">All email sends</text>
+        <text x="100" y="186" font-size="11" fill="#888">+ lead data</text>
+        <text x="100" y="204" font-size="11" fill="#888">+ account geo</text>
+        <text x="330" y="75" font-size="11" font-weight="600" fill="#1565c0">Campaign Mapping</text>
+        <text x="345" y="93" font-size="10" fill="#888">campaign name/type</text>
+        <text x="345" y="108" font-size="10" fill="#888">fuzzy match score</text>
+        <text x="365" y="180" font-size="11" font-weight="600" fill="#7b1fa2">PV_ACCOUNT</text>
+        <text x="375" y="198" font-size="10" fill="#888">industry, segment</text>
+        <text x="260" y="265" font-size="11" font-weight="600" fill="#c62828">PV_TIME</text>
+        <text x="340" y="265" font-size="10" fill="#888">fiscal calendar</text>
+      </svg>
+    </div>
+    <div class="note">
+      <strong>FINAL_EMAIL_ACTIVITY_TABLE is the driver.</strong> All rows preserved.
+      Campaign mapping may create fanout (use COUNT DISTINCT E_ID for metrics).
+      PV_ACCOUNT and PV_TIME enrich without duplication.
+    </div>
+  </div>
+</div>
+
+<!-- TAB 3: JOIN DETAILS -->
+<div id="joins" class="tab-content">
+  <h1>Join Details</h1>
+  <p class="subtitle">Every join in the pipeline explained</p>
+
+  <h2 style="font-size: 15px; margin: 20px 0 12px; color: #7a5c00;">Step 1: Lead Enrichment</h2>
+  <div class="join-grid">
+    <div class="join-card jc1">
+      <h4>PV_LEAD &rarr; PV_LEAD_CONTACT</h4>
+      <p><strong>Type:</strong> LEFT JOIN<br>
+      <strong>Key:</strong> <span class="key">COALESCE(SFDC_CONTACT_ID, SFDC_LEAD_ID) = LEAD_CONTACT_ID</span><br>
+      <strong>Purpose:</strong> Attach SFDC contact info (email, title, company, account, geo) to Marketo leads<br>
+      <strong>Unmatched:</strong> ~110K leads with no SFDC record &rarr; SFDC_MAPPING = NO</p>
+    </div>
+  </div>
+
+  <h2 style="font-size: 15px; margin: 20px 0 12px; color: #1b5e20;">Step 2: Email Activity</h2>
+  <div class="join-grid">
+    <div class="join-card jc2">
+      <h4>SEND_EMAIL &rarr; FIRST_DELIVERED</h4>
+      <p><strong>Type:</strong> LEFT JOIN (pre-aggregated CTE)<br>
+      <span class="key">LEAD_ID + PRIMARY_ATTRIBUTE_VALUE_ID + CAMPAIGN_RUN_ID</span><br>
+      MIN(ACTIVITY_DATE) &rarr; first delivery date</p>
+    </div>
+    <div class="join-card jc2">
+      <h4>SEND_EMAIL &rarr; FIRST_BOUNCED</h4>
+      <p><strong>Type:</strong> LEFT JOIN (pre-aggregated CTE)<br>
+      <span class="key">LEAD_ID + PRIMARY_ATTRIBUTE_VALUE_ID + CAMPAIGN_RUN_ID</span><br>
+      MIN(ACTIVITY_DATE) &rarr; first hard bounce</p>
+    </div>
+    <div class="join-card jc2">
+      <h4>SEND_EMAIL &rarr; LAST_BOUNCED_SOFT</h4>
+      <p><strong>Type:</strong> LEFT JOIN (pre-aggregated CTE)<br>
+      <span class="key">LEAD_ID + PRIMARY_ATTRIBUTE_VALUE_ID + CAMPAIGN_RUN_ID</span><br>
+      MAX(ACTIVITY_DATE) &rarr; <strong>last</strong> soft bounce</p>
+    </div>
+    <div class="join-card jc2">
+      <h4>SEND_EMAIL &rarr; FIRST_OPENS / FIRST_CLICKS / FIRST_UNSUBSCRIBE</h4>
+      <p><strong>Type:</strong> LEFT JOIN (pre-aggregated CTEs)<br>
+      <span class="key">LEAD_ID + PRIMARY_ATTRIBUTE_VALUE_ID + CAMPAIGN_RUN_ID</span><br>
+      MIN(ACTIVITY_DATE) for each</p>
+    </div>
+    <div class="join-card jc1">
+      <h4>SEND_EMAIL &rarr; Step 1 table</h4>
+      <p><strong>Type:</strong> LEFT JOIN<br>
+      <span class="key">s.LEAD_ID = ld.MARKETO_LEAD_ID</span><br>
+      Attaches lead/contact enrichment data to each send event</p>
+    </div>
+  </div>
+
+  <h2 style="font-size: 15px; margin: 20px 0 12px; color: #0d47a1;">Step 3: Campaign Mapping</h2>
+  <div class="join-grid">
+    <div class="join-card jc3">
+      <h4>Email Names &rarr; PV_CAMPAIGN (fuzzy)</h4>
+      <p><strong>Type:</strong> LEFT JOIN with blocking + scoring<br>
+      <span class="key">FY quarter / Region / prefix match</span><br>
+      Scored with Jaccard (35%) + Jaro-Winkler (20%) + Edit Distance (20%) + bonuses (25%)<br>
+      Best match per email name (ROW_NUMBER = 1)</p>
+    </div>
+  </div>
+
+  <h2 style="font-size: 15px; margin: 20px 0 12px; color: #880e4f;">Step 4: Dashboard Final</h2>
+  <div class="join-grid">
+    <div class="join-card jc4">
+      <h4>Email Activity &rarr; Campaign Mapping</h4>
+      <p><strong>Type:</strong> LEFT JOIN<br>
+      <span class="key">CAST(a.CAMPAIGN_ID AS VARCHAR) = CAST(b.att_CAMPAIGN_ID AS VARCHAR)</span><br>
+      May cause fanout if 1 campaign matches multiple mappings. Use COUNT(DISTINCT E_ID).</p>
+    </div>
+    <div class="join-card jc5">
+      <h4>Email Activity &rarr; PV_ACCOUNT</h4>
+      <p><strong>Type:</strong> LEFT JOIN<br>
+      <span class="key">a.ACCOUNT_ID = ac.ACCOUNT_ID</span><br>
+      Adds industry + DRVD_SEGMENT for THEATRE logic</p>
+    </div>
+    <div class="join-card jc6">
+      <h4>Email Activity &rarr; PV_TIME</h4>
+      <p><strong>Type:</strong> LEFT JOIN<br>
+      <span class="key">a.SEND_DATE = c.DAY_END_DATE</span><br>
+      Adds fiscal quarter, week, month, year</p>
+    </div>
+    <div class="join-card jc1">
+      <h4>Email Activity &rarr; EMAIL_OPT_IN_FLAG_Y</h4>
+      <p><strong>Type:</strong> LEFT JOIN<br>
+      <span class="key">a.LEAD_CONTACT_ID = opt.LEAD_CONTACT_ID</span><br>
+      Adds email opt-in flag</p>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 4: COLUMN SOURCES -->
+<div id="columns" class="tab-content">
+  <h1>Column Sources in Dashboard Table</h1>
+  <p class="subtitle">Where each column in EMAIL_PERFORMANCE_DASHBOARD_FINAL comes from</p>
+
+  <table class="col-table">
+    <thead>
+      <tr><th>Column Name</th><th>Source</th><th>Origin</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>LC_LEAD_CONTACT_ID</td><td><span class="src-tag src-sfdc">SFDC</span></td><td>COALESCE(LEAD_CONTACT_ID, SFDC_LEAD_CONTACT_ID, LEAD_ID)</td></tr>
+      <tr><td>LC_ACCOUNT_ID</td><td><span class="src-tag src-sfdc">SFDC</span></td><td>COALESCE(ACCOUNT_ID, SFDC_ACCOUNT_ID)</td></tr>
+      <tr><td>E_ID</td><td><span class="src-tag src-marketo">Marketo</span></td><td>PV_ACTIVITY_SEND_EMAIL.ID (unique send event)</td></tr>
+      <tr><td>E_SEND_DATE</td><td><span class="src-tag src-marketo">Marketo</span></td><td>ACTIVITY_DATE cast to DATE</td></tr>
+      <tr><td>DELIVERED_DATE</td><td><span class="src-tag src-activity">Activity</span></td><td>MIN(PV_ACTIVITY_EMAIL_DELIVERED.ACTIVITY_DATE)</td></tr>
+      <tr><td>BOUNCED_DATE</td><td><span class="src-tag src-activity">Activity</span></td><td>MIN(PV_ACTIVITY_EMAIL_BOUNCED.ACTIVITY_DATE)</td></tr>
+      <tr><td>BOUNCED_SOFT_DATE</td><td><span class="src-tag src-activity">Activity</span></td><td>MAX(PV_ACTIVITY_EMAIL_BOUNCED_SOFT.ACTIVITY_DATE)</td></tr>
+      <tr><td>FIRST_OPEN_DATE</td><td><span class="src-tag src-activity">Activity</span></td><td>MIN(PV_ACTIVITY_OPEN_EMAIL.ACTIVITY_DATE)</td></tr>
+      <tr><td>FIRST_CLICK_DATE</td><td><span class="src-tag src-activity">Activity</span></td><td>MIN(PV_ACTIVITY_CLICK_EMAIL.ACTIVITY_DATE)</td></tr>
+      <tr><td>UNSUBSCRIBE_DATE</td><td><span class="src-tag src-activity">Activity</span></td><td>MIN(PV_ACTIVITY_UNSUBSCRIBE_EMAIL.ACTIVITY_DATE)</td></tr>
+      <tr><td>IS_DELIVERED / IS_BOUNCED / etc.</td><td><span class="src-tag src-derived">Derived</span></td><td>Boolean: date IS NOT NULL</td></tr>
+      <tr><td>DAYS_TO_DELIVER / OPEN / CLICK</td><td><span class="src-tag src-derived">Derived</span></td><td>DATEDIFF from SEND_DATE</td></tr>
+      <tr><td>E_LEAD_CONTACT_ID</td><td><span class="src-tag src-sfdc">SFDC</span></td><td>Same as LC_LEAD_CONTACT_ID</td></tr>
+      <tr><td>E_EMAIL, E_TITLE, E_COMPANY</td><td><span class="src-tag src-sfdc">SFDC</span></td><td>PV_LEAD_CONTACT via Step 1</td></tr>
+      <tr><td>E_JOB_FUNCTION, E_JOB_LEVEL</td><td><span class="src-tag src-sfdc">SFDC</span></td><td>PV_LEAD_CONTACT via Step 1</td></tr>
+      <tr><td>E_ACTION_RESULT</td><td><span class="src-tag src-marketo">Marketo</span></td><td>PV_ACTIVITY_SEND_EMAIL.ACTION_RESULT</td></tr>
+      <tr><td>SFDC_MAPPING</td><td><span class="src-tag src-derived">Derived</span></td><td>YES if SFDC ID exists, NO otherwise</td></tr>
+      <tr><td>E_PRIMARY_ATTRIBUTE_VALUE</td><td><span class="src-tag src-marketo">Marketo</span></td><td>Email name from send event</td></tr>
+      <tr><td>PV_CAMPAIGN_NAME / TYPE / THEME</td><td><span class="src-tag src-campaign">Campaign</span></td><td>Fuzzy matched from PV_CAMPAIGN (Step 3)</td></tr>
+      <tr><td>MATCH_PCT, CONFIDENCE</td><td><span class="src-tag src-campaign">Campaign</span></td><td>Fuzzy match score from Step 3</td></tr>
+      <tr><td>THEATRE</td><td><span class="src-tag src-derived">Derived</span></td><td>CASE on DRVD_SEGMENT (PV_ACCOUNT) + ACCOUNT_THEATRE</td></tr>
+      <tr><td>AREA, REGION, TERRITORY</td><td><span class="src-tag src-sfdc">SFDC</span></td><td>PV_LEAD_CONTACT via Step 1 &rarr; Step 2</td></tr>
+      <tr><td>ACCOUNT_INDUSTRY</td><td><span class="src-tag src-sfdc">SFDC</span></td><td>PV_ACCOUNT.INDUSTRY</td></tr>
+      <tr><td>FIS_QTR_WK_NUM / FIS_QTR_ID / etc.</td><td><span class="src-tag src-time">Time</span></td><td>PV_TIME fiscal calendar</td></tr>
+      <tr><td>EMAIL_OPT_IN_FLAG</td><td><span class="src-tag src-derived">Derived</span></td><td>EMAIL_OPT_IN_FLAG_Y table</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+
+</body>
+</html>
